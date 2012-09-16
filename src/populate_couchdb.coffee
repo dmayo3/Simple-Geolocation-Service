@@ -52,17 +52,26 @@ batch_load = (callback) ->
 			setTimeout ->
 				console.log 'Quiting!'
 				redis_client.quit()
-			, 0
+			, 2000
 
 load_citytown = (id, callback) ->
 	(callback) ->
 		redis_client.hgetall "location:#{id}", callback
 
 load_geocode = (location, callback) ->
+	if location?.geolocation?
+		id = location.geolocation
+		redis_client.hgetall "geocode:#{id}", (error, geocode) ->
+			location.geolocation = geocode
+			callback(error, location)
+	else
+		callback(null, location)
+
+save_citytown = (location, callback) ->
 	callback(null, 'done')
 
 load_cities_and_towns (citytown_keys) ->
 	throttle_load citytown_keys, batch_load (citytown_id) ->
-		async.waterfall [ load_citytown(citytown_id), load_geocode ], (error) ->
+		async.waterfall [ load_citytown(citytown_id), load_geocode, save_citytown ], (error) ->
 			if error?
 				console.log "Error while loading citytown #{citytown_id}: #{error}"
