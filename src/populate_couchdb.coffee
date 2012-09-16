@@ -1,9 +1,10 @@
 redis = require 'redis'
 cradle = require 'cradle' # couchdb client
 async = require 'async'
+{EventEmitter} = require 'events'
 
 cradle.setup
-	host: 'http://localhost/'
+	host: 'localhost'
 	port: 5984
 	cache: false # Do not use client write-through cache
 	raw: false
@@ -12,6 +13,7 @@ redis_client = redis.createClient(6379)
 
 cradle_client = new cradle.Connection()
 couchdb = cradle_client.database('geolocation')
+couchdb.create()
 
 # Splits a redis key by ':' separator and returns the second half
 extract_id_from = (key) -> key.split(':')[1]
@@ -33,16 +35,20 @@ throttle_load = (keys, callback) ->
 
 	# When redis_client is ready for more operations
 	redis_client.on 'drain', ->
-		# Progress indicator
-		callback(keys)
+		# Give CouchDB a chance to keep up
+		# TODO better solution
+		setTimeout ->
+			callback(keys)
+		, 1000
 
 batch_load = (callback) ->
 	(keys) ->
 		# Batch up operations
 		for i in [1..100] when keys.length > 0
+			console.log keys.length if keys.length % 10000 == 0
 			key = keys.pop()
 			id = extract_id_from(key)
-			callback(id)
+			callback(id) 
 		
 		if keys.length == 0
 			# Done!
@@ -56,22 +62,43 @@ batch_load = (callback) ->
 
 load_citytown = (id, callback) ->
 	(callback) ->
-		redis_client.hgetall "location:#{id}", callback
+		redis_client.hgetall "location:#{id}", (error, location) ->
+			location._id = id if location?
+			callback(error, location)
 
 load_geocode = (location, callback) ->
 	if location?.geolocation?
 		id = location.geolocation
 		redis_client.hgetall "geocode:#{id}", (error, geocode) ->
-			location.geolocation = geocode
+			if geocode?
+				location.geolocation = geocode
+			else
+				delete location.geolocation
+
 			callback(error, location)
 	else
 		callback(null, location)
 
 save_citytown = (location, callback) ->
-	callback(null, 'done')
+	if location?
+		citytown_batch_saver.queue_save location, callback
+
+citytown_batch_saver = new EventEmitter()
+citytown_batch_saver.batch = []
+
+citytown_batch_saver.queue_save = (location, callback) ->
+	@batch.push(location)
+	if @batch.length == 50
+		@save_batch @batch, callback
+		@batch = []
+	else
+		callback(null, 'queued')
+
+citytown_batch_saver.save_batch = (docs, callback) ->
+	couchdb.save docs, callback
 
 load_cities_and_towns (citytown_keys) ->
 	throttle_load citytown_keys, batch_load (citytown_id) ->
 		async.waterfall [ load_citytown(citytown_id), load_geocode, save_citytown ], (error) ->
 			if error?
-				console.log "Error while loading citytown #{citytown_id}: #{error}"
+				console.log "Error while saving citytown #{citytown_id}: #{error}"
