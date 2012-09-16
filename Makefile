@@ -1,9 +1,12 @@
 BUILD_DIR = build
 DEBUG = --debug --debug-brk
 
-all: run
+all: run-populate-couchdb
 
-run: compile
+run-populate-couchdb: compile
+	node build/populate_couchdb.js
+
+run-load-freebase-data: compile
 	node build/load_freebase_data.js
 
 compile:

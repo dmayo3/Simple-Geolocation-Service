@@ -4,6 +4,9 @@ async = require 'async'
 
 redis_client = redis.createClient(6379)
 
+redis_client.on 'error', (error) ->
+	console.log "Redis client error: #{error}"
+
 location_tsv_dump = __dirname + '/../location.tsv'
 geocode_tsv_dump = __dirname + '/../geocode.tsv'
 citytown_tsv_dump = __dirname + '/../citytown.tsv'
@@ -24,31 +27,32 @@ parse_tsv = (file, termination_callback, data_callback) ->
 		console.log error.message
 	)
 
-save = (data, namespace, key) ->
-	redis_client.set "#{namespace}:#{data.id}:#{key}", data[key]
-
 parse_location_data = (termination_callback) ->
 	parse_tsv location_tsv_dump, termination_callback, (data, index) ->
 		if data.name?
-			save data, 'location', 'name'
-			save data, 'location', 'geolocation' if data.geolocation?
-			save data, 'location', 'containedby' if data.containedby?
+			location = { name: data.name }
+			location.geolocation = data.geolocation if data.geolocation?
+			location.containedby = data.containedby if data.containedby?
+
+			redis_client.hmset "location:#{data.id}", location
 
 			if data.nearby_airports?
 				nearby_airports = data.nearby_airports.split ','
 				nearby_airports.forEach (airport) ->
-					redis_client.sadd "location:#{data.id}:nearby_airports", airport
+					redis_client.sadd "nearby_airports:#{data.id}", airport
 
 parse_geocode_data = (termination_callback) ->
 	parse_tsv geocode_tsv_dump, termination_callback, (data, index) ->
 		if data.longitude? && data.latitude?
-			save data, 'geocode', 'latitude'
-			save data, 'geocode', 'longitude'
+			redis_client.hmset "geocode:#{data.id}",
+				latitude: data.latitude
+				longitude: data.longitude
 
 parse_citytown_data = (termination_callback) ->
 	parse_tsv citytown_tsv_dump, termination_callback, (data, index) ->
 		if data.name?
-			save data, 'citytown', 'name'
+			redis_client.set "citytown:#{data.id}", data.name
 
-async.parallel [ parse_location_data, parse_geocode_data, parse_citytown_data ], ->
-	redis_client.quit()
+redis_client.flushall (error) ->
+	async.parallel [ parse_location_data, parse_geocode_data, parse_citytown_data ], ->
+		redis_client.quit()
