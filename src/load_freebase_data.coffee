@@ -2,6 +2,8 @@ redis = require 'redis'
 csv = require 'csv'
 async = require 'async'
 
+String.prototype.toTitleCase = require('./common').toTitleCase
+
 redis_client = redis.createClient(6379)
 
 redis_client.on 'error', (error) ->
@@ -51,7 +53,8 @@ parse_geocode_data = (termination_callback) ->
 parse_citytown_data = (termination_callback) ->
 	parse_tsv citytown_tsv_dump, termination_callback, (data, index) ->
 		if data.name?
-			redis_client.set "citytown:#{data.id}", data.name
+			name = data.name.toTitleCase()
+			redis_client.set "citytown:#{name}", data.id
 
 redis_client.flushall (error) ->
 	async.parallel [ parse_location_data, parse_geocode_data, parse_citytown_data ], ->

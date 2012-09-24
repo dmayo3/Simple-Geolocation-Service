@@ -3,16 +3,17 @@ cradle = require 'cradle' # couchdb client
 async = require 'async'
 {EventEmitter} = require 'events'
 
+redis_client = redis.createClient 6379
+
+# TODO make common
 cradle.setup
 	host: 'localhost'
 	port: 5984
 	cache: false # Do not use client write-through cache
 	raw: false
 
-redis_client = redis.createClient(6379)
-
 cradle_client = new cradle.Connection()
-couchdb = cradle_client.database('geolocation')
+couchdb = cradle_client.database 'geolocation'
 couchdb.create()
 
 # Splits a redis key by ':' separator and returns the second half
@@ -47,8 +48,11 @@ batch_load = (callback) ->
 		for i in [1..100] when keys.length > 0
 			console.log keys.length if keys.length % 10000 == 0
 			key = keys.pop()
-			id = extract_id_from(key)
-			callback(id) 
+			redis_client.get key, (error, id) ->
+				if error?
+					console.log "Error loading citytown id: #{error}"
+				else
+					callback(id)
 		
 		if keys.length == 0
 			# Done!
