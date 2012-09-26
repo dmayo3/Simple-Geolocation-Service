@@ -11,3 +11,10 @@ Redis is used to provide a very simple autocomplete/typeahead search function. C
 A very simple web page is provided to test / demonstrate the service.
 
 The data is provided by [Freebase](http://www.freebase.com/), in the form of large [TSV files](http://download.freebase.com/datadumps/latest/browse/location/) (Tab Separated Values). Make sure you read the [License](http://wiki.freebase.com/wiki/Data_dumps#License) if you wish to use Freebase data yourself.
+
+## ToDo
+
+* Avoid locations such as London, US overwriting data for London, UK.
+* Optimise dataset size.
+* Deploy to AWS (will cost unfortunately).
+* Make it possible to search for areas / regions.
