@@ -72,6 +72,8 @@ batch_load = (callback) ->
 load_citytown = (id, callback) ->
 	(callback) ->
 		redis_client.hgetall "location:#{id}", (error, location) ->
+            # TODO handle error
+            # TODO set error if location missing?
 			location._id = id if location?
 			callback(error, location)
 
@@ -87,6 +89,14 @@ load_geocode = (location, callback) ->
 			callback(error, location)
 	else
 		callback(null, location)
+
+# Not used yet, needs testing.
+load_airports = (location, callback) ->
+	redis_client.smembers "nearby_airports:#{location._id}", (error, airports) ->
+        # TODO handle error
+		location.nearby_airports = airports if airports?
+		callback(error, location)
+
 
 # TODO load nearby airports
 # TODO load contained-by data
