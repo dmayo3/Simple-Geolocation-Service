@@ -1,3 +1,6 @@
+# Take the Freebase data stored in Redis and load it into CouchDB as structured
+# documents
+
 redis = require 'redis'
 cradle = require 'cradle' # couchdb client
 async = require 'async'
@@ -5,7 +8,7 @@ async = require 'async'
 
 redis_client = redis.createClient 6379
 
-# TODO make common
+# TODO share configuration between files
 cradle.setup
 	host: 'localhost'
 	port: 5984
@@ -29,6 +32,8 @@ load_cities_and_towns = (callback) ->
 			console.log 'Got citytowns'
 			callback(citytown_keys)
 
+# TODO improve throttling, async library should have some sort of a standard
+# solution to this problem.
 throttle_load = (keys, callback) ->
 	callback(keys)
 
@@ -82,6 +87,9 @@ load_geocode = (location, callback) ->
 			callback(error, location)
 	else
 		callback(null, location)
+
+# TODO load nearby airports
+# TODO load contained-by data
 
 save_citytown = (location, callback) ->
 	if location?

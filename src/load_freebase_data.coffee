@@ -1,3 +1,5 @@
+# Load Freebase TSV data and store the bits we want in Redis
+
 redis = require 'redis'
 csv = require 'csv'
 async = require 'async'
@@ -20,6 +22,7 @@ parse_tsv = (file, termination_callback, data_callback) ->
 			quote: ''
 			columns: true
 	).on('data', (data, index) ->
+        # Progress tick
 		console.log '.' if index % 50000 == 0
 		data_callback(data, index)
 	).on('end', (count) ->
@@ -34,6 +37,7 @@ parse_location_data = (termination_callback) ->
 		if data.name?
 			location = { name: data.name }
 			location.geolocation = data.geolocation if data.geolocation?
+            # TODO split containedBy into array and store in a set
 			location.containedby = data.containedby if data.containedby?
 
 			redis_client.hmset "location:#{data.id}", location
@@ -53,6 +57,8 @@ parse_geocode_data = (termination_callback) ->
 parse_citytown_data = (termination_callback) ->
 	parse_tsv citytown_tsv_dump, termination_callback, (data, index) ->
 		if data.name?
+            # Normalise city-town name case, this makes it slightly easier to
+            # query keys later on
 			name = data.name.toTitleCase()
 			redis_client.set "citytown:#{name}", data.id
 

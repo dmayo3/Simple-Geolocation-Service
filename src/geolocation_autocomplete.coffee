@@ -1,3 +1,5 @@
+# Simple web service for searching and looking up geolocation data
+
 bricks = require 'bricks'
 redis = require 'redis'
 cradle = require 'cradle' # couchdb client
