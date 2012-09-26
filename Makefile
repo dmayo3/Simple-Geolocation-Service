@@ -2,7 +2,7 @@ SRC_DIR = src
 BUILD_DIR = build
 DEBUG = --debug --debug-brk
 
-all: run-geolocation-autocomplete
+all: populate-data run-geolocation-autocomplete
 
 populate-data: clean run-load-freebase-data run-populate-couchdb
 

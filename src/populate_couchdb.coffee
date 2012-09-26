@@ -72,33 +72,40 @@ batch_load = (callback) ->
 load_citytown = (id, callback) ->
 	(callback) ->
 		redis_client.hgetall "location:#{id}", (error, location) ->
-            # TODO handle error
-            # TODO set error if location missing?
-			location._id = id if location?
-			callback(error, location)
+			if error?
+				callback(error, null)
+			else if not location?
+				callback("No location found with id: #{id}", null)
+			else
+				location._id = id
+				callback(null, location)
 
 load_geocode = (location, callback) ->
-	if location?.geolocation?
+	if location.geolocation?
 		id = location.geolocation
 		redis_client.hgetall "geocode:#{id}", (error, geocode) ->
-			if geocode?
+			if error?
+				callback(error, null)
+			else if geocode?
 				location.geolocation = geocode
+				callback(null, location)
 			else
 				delete location.geolocation
-
-			callback(error, location)
+				callback(null, location)
+			
 	else
 		callback(null, location)
 
-# Not used yet, needs testing.
 load_airports = (location, callback) ->
 	redis_client.smembers "nearby_airports:#{location._id}", (error, airports) ->
-        # TODO handle error
-		location.nearby_airports = airports if airports?
-		callback(error, location)
+		if error?
+			callback(error, null)
+		else if not airports?
+			callback(null, location)
+		else
+			location.nearby_airports = airports
+			callback(null, location)
 
-
-# TODO load nearby airports
 # TODO load contained-by data
 
 save_citytown = (location, callback) ->
@@ -121,6 +128,6 @@ citytown_batch_saver.save_batch = (docs, callback) ->
 
 load_cities_and_towns (citytown_keys) ->
 	throttle_load citytown_keys, batch_load (citytown_id) ->
-		async.waterfall [ load_citytown(citytown_id), load_geocode, save_citytown ], (error) ->
+		async.waterfall [ load_citytown(citytown_id), load_geocode, load_airports, save_citytown ], (error) ->
 			if error?
 				console.log "Error while saving citytown #{citytown_id}: #{error}"
