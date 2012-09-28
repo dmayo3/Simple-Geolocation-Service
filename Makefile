@@ -2,7 +2,7 @@ SRC_DIR = src
 BUILD_DIR = build
 DEBUG = --debug --debug-brk
 
-all: populate-data run-geolocation-autocomplete
+all: populate-data delete-unused-data run-geolocation-autocomplete
 
 populate-data: clean run-load-freebase-data run-populate-couchdb
 
@@ -33,3 +33,8 @@ flush-redis:
 
 drop-couchdb:
 	curl -X DELETE localhost:5984/geolocation
+
+delete-unused-data:
+	echo "Removing unused data from Redis"
+	redis-cli KEYS "location:*" | xargs redis-cli DEL
+	redis-cli KEYS "geocode:*" | xargs redis-cli DEL
