@@ -2,6 +2,8 @@ SRC_DIR = src
 BUILD_DIR = build
 DEBUG = --debug --debug-brk
 
+.PHONY: all test clean
+
 all: populate-data delete-unused-data run-geolocation-autocomplete
 
 populate-data: clean run-load-freebase-data run-populate-couchdb
@@ -19,6 +21,9 @@ compile: compile-coffeescript copy-html
 
 compile-coffeescript:
 	coffee --compile --lint --output ${BUILD_DIR} ${SRC_DIR}
+
+test:
+	./node_modules/.bin/mocha
 
 copy-html:
 	cp -r ${SRC_DIR}/static ${BUILD_DIR}/static
