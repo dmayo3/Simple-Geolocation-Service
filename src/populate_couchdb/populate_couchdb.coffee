@@ -24,8 +24,15 @@ load_citytown = (citytown_key) ->
 	(callback) ->
 		load_location(citytown_key, callback)
 
+save_queue = []
+
 save_citytown = (location, callback) ->
-	couchdb.save location, callback
+	if save_queue.length >= 200
+		couchdb.save save_queue, callback
+		save_queue = []
+	else
+		save_queue.push location
+		callback(null)
 
 load_and_save_citytown = (citytown_key, callback) ->
 	async.waterfall [ load_citytown(citytown_key), save_citytown ], callback
@@ -42,7 +49,7 @@ track_progress = ->
 		total: queue.length()
 		last: queue.length()
 
-	interval = 2000
+	interval = 5000
 
 	setInterval ->
 		diff = progress.last - queue.length()
@@ -65,7 +72,7 @@ populate_couchdb = (concurrency, callback) ->
 		track_progress()
 
 if !module.parent?
-	populate_couchdb 6, ->
+	populate_couchdb 2, ->
 		console.log 'Finished populating CouchDB!'
 		redis_client.quit()
 
