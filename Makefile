@@ -12,7 +12,7 @@ run-load-freebase-data: compile
 	node build/load_freebase_data.js
 
 run-populate-couchdb: compile
-	node build/populate_couchdb.js
+	node build/populate_couchdb/populate_couchdb.js
 
 run-geolocation-autocomplete: compile
 	node build/geolocation_autocomplete.js
