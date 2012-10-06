@@ -2,8 +2,8 @@
 # documents
 
 async = require 'async'
-redis_client = require 'redis_connection'
-couchdb = require 'cradle_connection' # couchdb client
+redis_client = require '../redis_connection'
+couchdb = require '../cradle_connection' # couchdb client
 
 load_location = require './load_location'
 

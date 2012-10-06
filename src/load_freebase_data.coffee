@@ -6,7 +6,7 @@ async = require 'async'
 
 String.prototype.toTitleCase = require('./common').toTitleCase
 
-redis_client = redis.createClient(6379)
+redis_client = require './redis_connection'
 
 redis_client.on 'error', (error) ->
 	console.log "Redis client error: #{error}"

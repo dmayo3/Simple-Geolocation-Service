@@ -1,24 +1,11 @@
 # Simple web service for searching and looking up geolocation data
 
+String.prototype.toTitleCase = require('./common').toTitleCase
+redis_client = require './redis_connection'
+couchdb = require './cradle_connection'
 bricks = require 'bricks'
-redis = require 'redis'
-cradle = require 'cradle' # couchdb client
 fs = require 'fs'
 
-String.prototype.toTitleCase = require('./common').toTitleCase
-
-redis_client = redis.createClient 6379
-
-# TODO make common
-cradle.setup
-	host: 'localhost'
-	port: 5984
-	cache: false # Do not use client write-through cache
-	raw: false
-
-cradle_client = new cradle.Connection()
-couchdb = cradle_client.database 'geolocation'
-couchdb.create()
 
 app_server = new bricks.appserver()
 

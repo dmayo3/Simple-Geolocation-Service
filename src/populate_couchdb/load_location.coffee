@@ -1,5 +1,5 @@
 async = require 'async'
-redis_client = require 'redis_connection'
+redis_client = require '../redis_connection'
 
 load_citytown_id = (citytown_key) ->
 	(callback) ->
