@@ -26,7 +26,7 @@ test:
 	./node_modules/.bin/mocha
 
 test-continuous:
-	./node_modules/.bin/mocha --watch
+	./node_modules/.bin/mocha --watch --growl
 
 copy-html:
 	cp -r ${SRC_DIR}/static ${BUILD_DIR}/static
