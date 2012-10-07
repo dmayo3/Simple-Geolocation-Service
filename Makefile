@@ -17,13 +17,16 @@ run-populate-couchdb: compile
 run-geolocation-autocomplete: compile
 	node build/geolocation_autocomplete.js
 
-compile: compile-coffeescript copy-html
+compile: clean-files compile-coffeescript copy-html
 
 compile-coffeescript:
 	coffee --compile --lint --output ${BUILD_DIR} ${SRC_DIR}
 
 test:
 	./node_modules/.bin/mocha
+
+test-continuous:
+	./node_modules/.bin/mocha --watch
 
 copy-html:
 	cp -r ${SRC_DIR}/static ${BUILD_DIR}/static

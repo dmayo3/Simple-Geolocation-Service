@@ -5,6 +5,7 @@ redis_client = require './redis_connection'
 couchdb = require './cradle_connection'
 bricks = require 'bricks'
 fs = require 'fs'
+require 'colors'
 
 
 app_server = new bricks.appserver()
@@ -36,7 +37,14 @@ app_server.addRoute '^/geolocation/citytown$', (request, response) ->
 	name = request.param('name').toTitleCase()
 
 	redis_client.get "citytown:#{name}", (error, id) ->
-		couchdb.get id, (err, doc) ->
+		# TODO better handling!
+		throw error if error?
+		# Just 404, again this is lazy error handling
+		return response.next() if not id?
+
+		couchdb.get id, (error, doc) ->
+			throw error if error?
+
 			# Filter out couchbase metadata before sending to client
 			delete doc[property] for property of doc when property.match /^_/
 			write_json(response, doc)
@@ -44,9 +52,15 @@ app_server.addRoute '^/geolocation/citytown$', (request, response) ->
 app_server.addRoute '.+', app_server.plugins.fourohfour
 
 app_server.addEventHandler 'route.fatal', (error) ->
-	console.log "Routing error: #{error}"
+	#console.error "Routing error: #{error}".red
 
 app_server.addEventHandler 'run.fatal', (error) ->
-	console.log "Route handler error: #{error}"
+	#console.error "Route handler error: #{error}".red
 
 app_server.createServer().listen 3000
+
+process.on 'uncaughtException', (error) ->
+  console.error "Uncaught Exception!".red
+  console.error error.stack.red
+
+console.log 'Webserver started on port 3000'.blue

@@ -14,7 +14,5 @@ The data is provided by [Freebase](http://www.freebase.com/), in the form of lar
 
 ## ToDo
 
-* Avoid locations such as London, US overwriting data for London, UK.
-* Optimise dataset size.
-* Deploy to AWS (will cost unfortunately).
+* Deploy to AWS.
 * Make it possible to search for areas / regions.

@@ -1,6 +1,7 @@
 # Take the Freebase data stored in Redis and load it into CouchDB as structured
 # documents
 
+require 'colors'
 async = require 'async'
 redis_client = require '../redis_connection'
 couchdb = require '../cradle_connection' # couchdb client
@@ -15,7 +16,7 @@ load_cities_and_towns = (callback) ->
 
 	redis_client.keys 'citytown:*', (error, citytown_keys) ->
 		if error?
-			console.error "error loading citytowns: #{error}"
+			console.error "error loading citytowns: #{error}".red
 		else
 			console.log 'Got citytowns'
 			callback(citytown_keys)
@@ -42,24 +43,29 @@ queue = async.queue load_and_save_citytown, 1
 queue.load_and_save = (citytown_key) ->
 	queue.push citytown_key, (error) ->
 		if error?
-			console.error "Error while saving citytown #{citytown_key}: #{error}"
+			console.error "Error while saving citytown #{citytown_key}: #{error}".red
 
-track_progress = ->
-	progress = 
-		total: queue.length()
-		last: queue.length()
+progress =
+	track: ->
+		# The total number of items to process
+		@total = queue.length()
+		# The number of items in the queue the last time we checked
+		@last = queue.length()
 
-	interval = 5000
+		interval = 5000
 
-	setInterval ->
-		diff = progress.last - queue.length()
-		speed = diff * 1000 / interval
-		estimated_time_to_complete = queue.length() / (60 * speed)
-		progress.last = queue.length()
-		percent_complete = (progress.total - queue.length()) / progress.total
-		console.log "#{queue.length()} remaining - #{Math.round percent_complete}% complete"
-		console.log "Estimated time to completion: #{Math.round estimated_time_to_complete} minutes @ #{speed}/second"
-	, interval
+		@progress_tracker = setInterval =>
+			diff = @last - queue.length()
+			speed = diff * 1000 / interval
+			estimated_time_to_complete = queue.length() / (60 * speed)
+			progress.last = queue.length()
+			percent_complete = ((@total - queue.length()) / @total) * 100
+			console.log "#{queue.length()} remaining - #{Math.round percent_complete}% complete"
+			console.log "Estimated time to completion: #{Math.round estimated_time_to_complete} minutes @ #{speed}/second"
+		, interval
+
+	finished: ->
+		clearInterval @progress_tracker
 
 populate_couchdb = (concurrency, callback) ->
 	queue.concurrency = concurrency
@@ -69,11 +75,12 @@ populate_couchdb = (concurrency, callback) ->
 		for citytown_key in citytown_keys
 			queue.load_and_save citytown_key
 
-		track_progress()
+		progress.track()
 
 if !module.parent?
 	populate_couchdb 2, ->
-		console.log 'Finished populating CouchDB!'
+		console.log 'Finished populating CouchDB!'.green
 		redis_client.quit()
+		progress.finished()
 
 module.exports = populate_couchdb
