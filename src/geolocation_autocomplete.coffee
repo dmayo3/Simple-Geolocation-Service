@@ -11,7 +11,12 @@ require 'colors'
 app_server = new bricks.appserver()
 
 # Add request plugin for parameter extraction
-app_server.addRoute '^/', app_server.plugins.request
+app_server.addRoute '.+', app_server.plugins.request, { section: 'pre' }
+
+app_server.addRoute '^/$', (request, response) ->
+	request.url = '/find-citytowns.html'
+	response.next()
+, { section: 'pre' }
 
 app_server.addRoute '.+', app_server.plugins.filehandler, { basedir: './build/static' }
 

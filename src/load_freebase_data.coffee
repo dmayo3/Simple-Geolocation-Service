@@ -64,4 +64,5 @@ parse_citytown_data = (termination_callback) ->
 
 redis_client.flushall (error) ->
 	async.parallel [ parse_location_data, parse_geocode_data, parse_citytown_data ], ->
+		console.log 'Finished loading Freebase data into Redis'.green
 		redis_client.quit()
