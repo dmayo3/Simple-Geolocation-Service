@@ -62,10 +62,12 @@ app_server.addEventHandler 'route.fatal', (error) ->
 app_server.addEventHandler 'run.fatal', (error) ->
 	#console.error "Route handler error: #{error}".red
 
-app_server.createServer().listen 3000
+port = process.env['port'] || 3000
+
+app_server.createServer().listen port
 
 process.on 'uncaughtException', (error) ->
   console.error "Uncaught Exception!".red
   console.error error.stack.red
 
-console.log 'Webserver started on port 3000'.blue
+console.log "Webserver started on port #{port}".blue
